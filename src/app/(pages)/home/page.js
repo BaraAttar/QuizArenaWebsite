@@ -24,7 +24,7 @@ export default function ChatPage() {
     const token = localStorage.getItem("token");
 
     // تهيئة الاتصال داخل useEffect
-    socketRef.current = io("http://localhost:8080", {
+    socketRef.current = io("https://quizarenasocket.onrender.com", {
       auth: { token },
     });
 
@@ -49,7 +49,6 @@ export default function ChatPage() {
         room: roomID,
         text: newMessage,
       });
-      setMessages((prev) => [...prev, { text: newMessage, sender: "user" }]);
       setNewMessage("");
     }
   };
@@ -65,13 +64,14 @@ export default function ChatPage() {
     <div className={styles.container}>
       <div className={styles.chatHeader}>
         <h1>Welcome, {user?.userName}</h1>
+        <p>{joined && roomID ? `room ID : ${roomID}` : ""}</p>
       </div>
       <div className={styles.messageArea}>
         {messages.map((message, index) => (
           <div
             key={index}
             className={`${styles.message} ${
-              message.sender === "user" ? styles.sent : ""
+              message.sender === user._id ? styles.sent : ""
             }`}
           >
             {message.text}
