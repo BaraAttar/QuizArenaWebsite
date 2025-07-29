@@ -39,7 +39,8 @@ const useUserStore = create((set) => ({
     // حذف البيانات من localStorage
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    set({ user: null, token: null });
+    set({ user: null, token: null, loading: false,
+  success: false, });
   },
 
   // دالة لتحميل البيانات من localStorage عند تحميل التطبيق

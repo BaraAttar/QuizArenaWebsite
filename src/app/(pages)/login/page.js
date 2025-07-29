@@ -11,7 +11,7 @@ export default function Login() {
     password: "Bar12345678",
   });
 
-  const { token, login, loading, success } = useUserStore();
+  const { user , token, login, loading, success } = useUserStore();
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -25,10 +25,10 @@ export default function Login() {
   }, [success, router]);
 
   useEffect(() => {
-    if (token) {
+    if (user && token) {
       router.push("/home");
     }
-  }, [token ,router]);
+  }, [user , token ,router]);
 
   return (
     <div className={styles.container}>

@@ -1,83 +1,62 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import useUserStore from "../../../../store/userStore";
-import { io } from "socket.io-client";
+import useChat from "@/app/hooks/useChat";
 
 export default function ChatPage() {
-  const [joined, setJoined] = useState(false);
-  const { user } = useUserStore();
+  const { user, logout } = useUserStore(); // تأكد أن لديك دالة logout في userStore
   const router = useRouter();
-
-  const [messages, setMessages] = useState([]);
+  const [roomID, setRoomID] = useState("");
   const [newMessage, setNewMessage] = useState("");
-  const [roomID, setRoomID] = useState([]);
-  const socketRef = useRef(null);
+
+  // استخدام hook الدردشة
+  const { messages, sendMessage, joinRoom, joined } = useChat(user, roomID);
 
   useEffect(() => {
     if (!user) {
       router.push("/login");
-      return;
     }
+  }, [user, router]);
 
-    const token = localStorage.getItem("token");
+  if (!user) return null;
 
-    // تهيئة الاتصال داخل useEffect
-    socketRef.current = io("https://quizarenasocket.onrender.com", {
-      auth: { token },
-    });
-
-    socketRef.current.on("connect", () => {
-      console.log("Connected to server");
-    });
-
-    socketRef.current.on("message", (msg) => {
-      setMessages((prev) => [...prev, { text: msg.text, sender: msg.sender }]);
-    });
-
-    return () => {
-      socketRef.current.off("message");
-      socketRef.current.emit("leaveRoom", roomID);
-      socketRef.current.disconnect();
-    };
-  }, [user, router, roomID]);
-
-  const sendMessage = () => {
-    if (newMessage.trim() !== "") {
-      socketRef.current.emit("message", {
-        room: roomID,
-        text: newMessage,
-      });
-      setNewMessage("");
-    }
+  const handleSend = () => {
+    sendMessage(newMessage);
+    setNewMessage("");
   };
 
-  const JoinRoom = () => {
-    if (roomID.trim() !== "") {
-      socketRef.current.emit("joinRoom", roomID);
-      setJoined(true); // ✅ المستخدم الآن داخل الغرفة
-      console.log(`Joined room: ${roomID}`);
-    }
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
   };
+
   return (
     <div className={styles.container}>
       <div className={styles.chatHeader}>
-        <h1>Welcome, {user?.userName}</h1>
-        <p>{joined && roomID ? `room ID : ${roomID}` : ""}</p>
+        <div className={styles.headerRow}>
+          <h1>Welcome, {user?.userName}</h1>
+          <button className={styles.logoutButton} onClick={handleLogout}>
+            تسجيل خروج
+          </button>
+        </div>
+        <p>{joined && roomID ? `Room ID: ${roomID}` : ""}</p>
       </div>
+
       <div className={styles.messageArea}>
-        {messages.map((message, index) => (
+        {messages.map((msg, index) => (
           <div
             key={index}
             className={`${styles.message} ${
-              message.sender === user._id ? styles.sent : ""
+              msg.sender === user._id ? styles.sent : ""
             }`}
           >
-            {message.text}
+            {msg.text}
           </div>
         ))}
       </div>
+
       <div className={styles.inputArea}>
         {!joined ? (
           <>
@@ -88,7 +67,7 @@ export default function ChatPage() {
               onChange={(e) => setRoomID(e.target.value)}
               placeholder="Enter Room ID..."
             />
-            <button onClick={JoinRoom} className={styles.sendButton}>
+            <button onClick={joinRoom} className={styles.sendButton}>
               Join Room
             </button>
           </>
@@ -101,7 +80,7 @@ export default function ChatPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type your message..."
             />
-            <button onClick={sendMessage} className={styles.sendButton}>
+            <button onClick={handleSend} className={styles.sendButton}>
               Send
             </button>
           </>
